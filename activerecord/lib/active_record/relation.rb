@@ -240,7 +240,40 @@ module ActiveRecord
 
     # Returns size of the records.
     def size
+      # original
       loaded? ? @records.length : count(:all)
+
+      # .to_a.size:
+#      loaded? ? @records.length : to_a.size
+      # gets a bunch of errors - query numbers, no /COUNT/, but also:
+      # test_size_on_distinct_columns_should_have_same_result_as_count:
+      # mysql & mysql2: passes
+      # sqlite3: Expected: -1, Actual: 4
+        # (so, raised on count, not on size)
+      # poastgresql: passes
+
+      # count(:id):
+      # loaded? ? @records.length : count(:id)
+      # mysql & mysql2:
+        #   1) Failure:
+        # CalculationsTest#test_size_on_distinct_columns_respects_distinct [/Users/cjhouhou/dev/rails/activerecord/test/cases/calculations_test.rb:213]:
+        # Failed assertion, no message given.
+        #   2) Failure:
+        # CalculationsTest#test_size_on_distinct_columns_should_have_same_result_as_count [/Users/cjhouhou/dev/rails/activerecord/test/cases/calculations_test.rb:238]:
+        # Expected: 4
+        #   Actual: 6
+      # sqlite3:  ALMOST the same:
+        #   1) Failure:
+        # CalculationsTest#test_size_on_distinct_columns_respects_distinct [/Users/cjhouhou/dev/rails/activerecord/test/cases/calculations_test.rb:213]:
+        # Failed assertion, no message given.
+        #   2) Failure:
+        # CalculationsTest#test_size_on_distinct_columns_should_have_same_result_as_count [/Users/cjhouhou/dev/rails/activerecord/test/cases/calculations_test.rb:238]:
+        # Expected: -1
+        #   Actual: 6
+      # postgresql:
+        #   1) Failure:
+        # CalculationsTest#test_size_on_distinct_columns_respects_distinct [/Users/cjhouhou/dev/rails/activerecord/test/cases/calculations_test.rb:213]:
+        # Failed assertion, no message given.
     end
 
     # Returns true if there are no records.
