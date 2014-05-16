@@ -176,6 +176,68 @@ class CalculationsTest < ActiveRecord::TestCase
     assert_match "credit_limit, firm_name", e.message
   end
 
+  # Only true in some dbs
+  # def test_count_on_distinct_columns_raises
+  #   e = assert_raises(ActiveRecord::StatementInvalid) {
+  #     Topic.select(:approved, :author_name).distinct.count
+  #   }
+
+  #   assert_match %r{topics}i, e.message
+  #   assert_match "approved, author_name", e.message
+  # end
+
+  # def test_size_on_distinct_columns_raises
+  #   e = assert_raises(ActiveRecord::StatementInvalid) {
+  #     Topic.select(:approved, :author_name).distinct.size
+  #   }
+
+  #   assert_match %r{topics}i, e.message
+  #   assert_match "approved, author_name", e.message
+  # end
+
+  def test_size_on_distinct_columns_respects_distinct
+    # Create a non-distinct Topic
+    approved = Topic.last.approved
+    author_name = Topic.last.author_name
+    Topic.create! :approved => approved, :author_name => author_name
+
+    topics_size = Topic.select(:approved, :author_name).size
+    # .distinct.size may raise, or it may return the number of distinct
+    # Topics.  It may not return the total number of Topics.
+    distinct_topics_size =
+      begin
+        Topic.select(:approved, :author_name).distinct.size
+      rescue
+        -1
+      end
+    assert distinct_topics_size < topics_size
+  end
+
+  def test_size_on_distinct_columns_should_have_same_result_as_count
+    # Create a non-distinct Topic
+    approved = Topic.last.approved
+    author_name = Topic.last.author_name
+    Topic.create! :approved => approved, :author_name => author_name
+
+    # Find count of distinct Topics
+    distinct_count =
+      begin
+        Topic.select(:approved, :author_name).distinct.count
+      rescue
+        -1
+      end
+
+    # Find size of distinct Topics
+    distinct_size =
+      begin
+        Topic.select(:approved, :author_name).distinct.size
+      rescue
+        -1
+      end
+
+    assert_equal distinct_count, distinct_size
+  end
+
   def test_should_group_by_summed_field_having_condition
     c = Account.group(:firm_id).having('sum(credit_limit) > 50').sum(:credit_limit)
     assert_nil        c[1]
